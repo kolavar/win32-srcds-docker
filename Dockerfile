@@ -1,31 +1,67 @@
-FROM ubuntu:focal
+FROM ubuntu:resolute
 
-ENV HOME /root
-ENV DEBIAN_FRONTEND noninteractive
-ENV LC_ALL C.UTF-8
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US.UTF-8
+ARG DEBIAN_FRONTEND=noninteractive
+ARG DEPOTDOWNLOADER_VERSION=3.4.0
+ARG APP_ID=740
+ARG DEPOT_ID=740
+ARG MANIFEST=4234207694164018948
+ARG APP_ID_GAME=730
+ARG DEPOT_ID_GAME=731
+ARG MANIFEST_GAME=3388427691642807733
+ENV STEAMAPPDIR=/opt/steam \
+    HOME=/root \
+    DEBIAN_FRONTEND=noninteractive \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    DISPLAY=:99 \
+    DISPLAY_WIDTH=1024 \
+    DISPLAY_HEIGHT=768 \
+    RUN_XTERM=no \
+    RUN_FLUXBOX=yes \
+    RUN_SRCDS=yes
 
-RUN dpkg --add-architecture i386 && \
-    apt-get update && apt-get -y install python3 python-is-python3 xvfb x11vnc xdotool wget tar supervisor net-tools fluxbox gnupg2 && \
-    echo 'echo -n $HOSTNAME' > /root/x11vnc_password.sh && chmod +x /root/x11vnc_password.sh && \
-    wget -O - https://dl.winehq.org/wine-builds/winehq.key | apt-key add - && \
-    echo 'deb https://dl.winehq.org/wine-builds/ubuntu/ focal main' | tee /etc/apt/sources.list.d/winehq.list && \
-    apt-get update && apt-get -y install winehq-stable=7.0.1~focal-1 && \
-    mkdir /opt/wine-stable/share/wine/mono && wget -O - https://dl.winehq.org/wine/wine-mono/7.0.0/wine-mono-7.0.0-x86.tar.xz | tar -xJv -C /opt/wine-stable/share/wine/mono && \
-    mkdir /opt/wine-stable/share/wine/gecko && wget -O /opt/wine-stable/share/wine/gecko/wine-gecko-2.47.2-x86.msi https://dl.winehq.org/wine/wine-gecko/2.47.2/wine-gecko-2.47.2-x86.msi && wget -O /opt/wine-stable/share/wine/gecko/wine-gecko-2.47.2-x86_64.msi https://dl.winehq.org/wine/wine-gecko/2.47.2/wine-gecko-2.47.2-x86_64.msi && \
-    apt-get -y full-upgrade && apt-get clean && rm -rf /var/lib/apt/lists/*
-ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-ADD supervisord-wine.conf /etc/supervisor/conf.d/supervisord-wine.conf
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        ca-certificates curl unzip \
+ && rm -rf /var/lib/apt/lists/* \
+ && mkdir -p /tmp/dd "${STEAMAPPDIR}" \
+ && curl -fsSL -o /tmp/dd.zip \
+      "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_${DEPOTDOWNLOADER_VERSION}/DepotDownloader-linux-x64.zip" \
+ && unzip /tmp/dd.zip -d /tmp/dd \
+ && chmod +x /tmp/dd/DepotDownloader \
+ && /tmp/dd/DepotDownloader \
+       -app "${APP_ID}" -depot "${DEPOT_ID}" -manifest "${MANIFEST}" \
+       -dir "${STEAMAPPDIR}" -os windows \
+ && /tmp/dd/DepotDownloader \
+       -app "${APP_ID_GAME}" -depot "${DEPOT_ID_GAME}" -manifest "${MANIFEST_GAME}" \
+       -dir "${STEAMAPPDIR}" \
+ && rm -rf /tmp/dd /tmp/dd.zip
 
-ENV WINEPREFIX /root/prefix32
-ENV WINEARCH win32
-ENV DISPLAY :0
+RUN apt-get update \
+ && apt-get install -y \
+        fluxbox net-tools novnc supervisor xauth x11vnc xterm xvfb wine cabextract \
+ && xvfb-run -a wineboot --init \
+ && dpkg --add-architecture i386 \
+ && apt-get update \
+ && apt-get install -y \
+        lib32gcc-s1 \
+        lib32stdc++6 \
+        lib32z1 \
+        libtinfo6:i386 \
+        libncurses6:i386 \
+        libcurl4-gnutls-dev:i386 \
+&& rm -rf /var/lib/apt/lists/*
 
-WORKDIR /root/
-RUN wget -O - https://github.com/novnc/noVNC/archive/v1.3.0.tar.gz | tar -xzv -C /root/ && mv /root/noVNC-1.3.0 /root/novnc && ln -s /root/novnc/vnc_lite.html /root/novnc/index.html && \
-    wget -O - https://github.com/novnc/websockify/archive/v0.11.0.tar.gz | tar -xzv -C /root/ && mv /root/websockify-0.11.0 /root/novnc/utils/websockify
+COPY srcds_run.sh ${STEAMAPPDIR}
 
-EXPOSE 8080
+WORKDIR /app
 
-CMD ["/usr/bin/supervisord"]
+COPY conf.d conf.d
+COPY supervisord.conf .
+COPY entrypoint.sh .
+
+EXPOSE 27015/tcp 27015/udp
+EXPOSE 8080/tcp
+
+ENTRYPOINT ["/app/entrypoint.sh"]

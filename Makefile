@@ -1,8 +1,5 @@
 build:
-	docker build -t wine-x11-novnc-docker .
+	docker build -t win32-srcds .
 
 run: build
-	docker run --rm -p 18080:8080 wine-x11-novnc-docker
-
-shell: build
-	docker run --rm -ti -p 18080:8080 wine-x11-novnc-docker bash
+	docker run --rm -it -p 27015:27015/udp -p 27015:27015/tcp -p 8080:8080 win32-srcds
