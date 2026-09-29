@@ -2,6 +2,7 @@ FROM ubuntu:resolute
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG DEPOTDOWNLOADER_VERSION=3.4.0
+ARG HANGOVER_VERSION=11.16
 ARG APP_ID=740
 ARG DEPOT_ID=740
 ARG MANIFEST=4234207694164018948
@@ -27,7 +28,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && mkdir -p /tmp/dd "${STEAMAPPDIR}" \
  && curl -fsSL -o /tmp/dd.zip \
-      "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_${DEPOTDOWNLOADER_VERSION}/DepotDownloader-linux-x64.zip" \
+      "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_${DEPOTDOWNLOADER_VERSION}/DepotDownloader-linux-arm64.zip" \
  && unzip /tmp/dd.zip -d /tmp/dd \
  && chmod +x /tmp/dd/DepotDownloader \
  && /tmp/dd/DepotDownloader \
@@ -40,18 +41,24 @@ RUN apt-get update \
 
 RUN apt-get update \
  && apt-get install -y \
-        fluxbox net-tools novnc supervisor xauth x11vnc xterm xvfb wine cabextract \
- && xvfb-run -a wineboot --init \
- && dpkg --add-architecture i386 \
+        fluxbox net-tools novnc supervisor xauth x11vnc xterm xvfb cabextract \
+ && curl -fsSL -o /tmp/hangover.tar \
+      "https://github.com/AndreRH/hangover/releases/download/hangover-${HANGOVER_VERSION}/hangover_${HANGOVER_VERSION}_ubuntu2604_resolute_arm64.tar" \
+ && mkdir -p /tmp/hangover \
+ && tar -xf /tmp/hangover.tar -C /tmp/hangover \
+ && apt-get install -y /tmp/hangover/*.deb \
+ && rm -rf /tmp/hangover /tmp/hangover.tar \
+ && wineboot --init \
+ && dpkg --add-architecture armhf \
  && apt-get update \
  && apt-get install -y \
-        lib32gcc-s1 \
-        lib32stdc++6 \
-        lib32z1 \
-        libtinfo6:i386 \
-        libncurses6:i386 \
-        libcurl4-gnutls-dev:i386 \
-&& rm -rf /var/lib/apt/lists/*
+        libgcc-s1:armhf \
+        libstdc++6:armhf \
+        zlib1g:armhf \
+        libtinfo6:armhf \
+        libncurses6:armhf \
+        libcurl4-gnutls-dev:armhf \
+ && rm -rf /var/lib/apt/lists/*
 
 COPY srcds_run.sh ${STEAMAPPDIR}
 
