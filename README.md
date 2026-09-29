@@ -1,12 +1,13 @@
 # win32-srcds-docker
 
 Build and run a containerized classic Source dedicated server.
-Powered by Wine with a virtual desktop (Xvfb + Fluxbox).
-Optional noVNC access for accessing the dedicated server console.
+On `linux/amd64` this uses Wine; on `linux/arm64` it uses [Hangover](https://github.com/AndreRH/hangover).
+Both provide a virtual desktop (Xvfb + Fluxbox).
+Optional noVNC access for the dedicated server console.
 
-This initial version was developed *and tested* on an Ubuntu 26.04 LTS
+This project was originally developed *and tested* on an Ubuntu 26.04 LTS
 x86_64 VM running a classic CS:GO dedicated server with manifests from
-August 17, 2012.
+August 17, 2012. It also builds for `linux/arm64`, tested on a Raspberry Pi 5.
 
 Obvious warning: do *not* expose this container to the internet as-is.
 An outdated Source dedicated server is highly exploitable.
@@ -15,7 +16,7 @@ Steam content is fetched at `docker build` time with [DepotDownloader](https://g
 
 ## Prerequisites
 
-- Docker on Linux x86_64
+- Docker on Linux (`linux/amd64` or `linux/arm64`)
 - Enough disk space for depot downloads
 - If you change anything, lots of free time to diagnose why `srcds.exe`
   is exiting with an error
@@ -48,12 +49,17 @@ Ports used:
 2. Supervisor reads `/app/supervisord.conf` and `conf.d/*`.
 3. Supervisor starts services including `srcds.exe` by running
      `/opt/steam/srcds_run.sh`.
-4. Wine runs `srcds.exe <args>`
-5. Supervisor reruns `/opt/steam/srcds_run.sh` if the server exits
+4. Wine (amd64) or Hangover's Wine (arm64) runs `srcds.exe <args>`.
+5. Supervisor reruns `/opt/steam/srcds_run.sh` if the server exits.
 
 ## Notes and limitations
 
 Any changes to which packages are installed may negatively impact the
-functionality of the server. Wine + 32-bit Source binaries need the i386
-libraries installed in the second `RUN` (`lib32gcc-s1`, `libtinfo6:i386`,
-etc.) as well as the recommended packages installed alongside Xvfb.
+functionality of the server.
+
+- **amd64:** Wine + 32-bit Source binaries need the i386 libraries
+  installed in the second `RUN` (`lib32gcc-s1`, `libtinfo6:i386`, etc.)
+  as well as the recommended packages installed alongside Xvfb.
+- **arm64:** Hangover is installed from the upstream `.deb` tarball, then
+  `armhf` libraries (`libgcc-s1:armhf`, `libtinfo6:armhf`, etc.) are
+  added so the 32-bit ARM Windows translation stack can run `srcds.exe`.
