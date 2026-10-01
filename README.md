@@ -7,7 +7,8 @@ Optional noVNC access for the dedicated server console.
 
 This project was originally developed *and tested* on an Ubuntu 26.04 LTS
 x86_64 VM running a classic CS:GO dedicated server with manifests from
-August 17, 2012. It also builds for `linux/arm64`, tested on a Raspberry Pi 5.
+August 17, 2012. It also builds for `linux/arm64`, tested on a Raspberry Pi 5
+(4KB page size via `kernel8.img`).
 
 Obvious warning: do *not* expose this container to the internet as-is.
 An outdated Source dedicated server is highly exploitable.
