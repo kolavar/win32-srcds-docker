@@ -26,8 +26,7 @@ Steam content is fetched at `docker build` time with [DepotDownloader](https://g
 
 ```bash
 # To change the parameters for `srcds.exe`, edit `srcds_run.sh`
-# To modify the parameters for `docker run`, e.g. to switch from
-#   `--net=host` to `-p ...`, edit `Makefile`.
+# To modify the parameters for `docker run`, edit `Makefile`.
 make run
 ```
 
