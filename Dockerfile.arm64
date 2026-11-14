@@ -50,6 +50,15 @@ RUN apt-get update \
  && rm -rf /tmp/hangover /tmp/hangover.tar \
  && wineboot --init \
  && dpkg --add-architecture armhf \
+ && sed -i '/^Signed-By:/a Architectures: arm64' /etc/apt/sources.list.d/ubuntu.sources \
+ && printf '%s\n' \
+      'Types: deb' \
+      'URIs: http://ports.ubuntu.com/ubuntu-ports' \
+      'Suites: resolute resolute-updates resolute-backports resolute-security' \
+      'Components: main restricted universe multiverse' \
+      'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg' \
+      'Architectures: armhf' \
+      > /etc/apt/sources.list.d/ubuntu-ports.sources \
  && apt-get update \
  && apt-get install -y \
         libgcc-s1:armhf \
